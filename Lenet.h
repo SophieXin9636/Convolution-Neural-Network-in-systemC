@@ -3,7 +3,9 @@
 #include<iostream>
 #include<fstream>
 
-
+#define KERNEL_SIZE 5
+#define DEPTH_L1 6
+#define DEPTH_L2 16
 
 using namespace std;
 
@@ -25,18 +27,20 @@ SC_MODULE(lenet)
 	void lenet_proc();
 	
 	ifstream fin;
-	int ram_cur;
+	int ram_w_cur; // RAM write of current index
+	int ram_r_cur; // RAM read  of current index
+	int rom_cur;
 	TYPE image[28][28];
-	TYPE sum[6][24*24];
-	TYPE kernel[5][5];
-	TYPE bias;
+	TYPE kernel[KERNEL_SIZE][KERNEL_SIZE];
+	TYPE bias, sum;
 	int i, j, ka, kb, cnt, cnt2, n, step;
-	int offset, times;
-	int ram_cnt;
+	int times;
 
 	TYPE scopeMAX[4]; // MAX pool
-	TYPE pool[6][14*14];
 	int pool_idx;
+
+	TYPE kernel_L2[6][KERNEL_SIZE][KERNEL_SIZE];
+	TYPE pooling_ft_L1[12][12]; // First pooling feature
 	
 	SC_CTOR(lenet)
 	{
