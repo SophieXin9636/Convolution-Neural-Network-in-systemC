@@ -11,7 +11,7 @@
 	* store(write) into RAM (index: 0~3455).
 	* Adding bias.
 	* Normalisation: using Activation function $ReLU(x) = max(x,0)$
-3. Pooling
+3. First Pooling
 	* Stride: 2
 	* Load First Convulution layer data (24\*24)\*6 from RAM.
 	* Create 12\*12\*6 filter and store(write) into RAM (index: 3456~4319).
@@ -23,3 +23,11 @@
 	* Store(write) into RAM (index: 4320~5343)
 	* Adding bias
 	* Normalisation: using Activation function $ReLU(x) = max(x,0)$
+5. Second Pooling
+	* Stride: 2
+	* Load First Convulution layer data (8\*8)\*16 from RAM. (index: 4320~5343)
+	* Create 4\*4\*16 filter and store(write) into RAM (index: 5344~5599).
+6. First fully connected layer
+	* 
+7. Second fully connected layer
+	* 

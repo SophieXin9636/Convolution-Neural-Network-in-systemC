@@ -173,8 +173,9 @@ void lenet::lenet_proc(){
 				cnt = 0;
 				times = 0;
 				ram_wr.write(1); // read
-				ram_addr.write(ram_r_cur);
-				i = 0;
+				ram_addr.write(4320);
+				//ram_addr.write(ram_r_cur);
+				i = 4320;
 			}
 			else{
 				/* convolution */
@@ -208,9 +209,50 @@ void lenet::lenet_proc(){
 			}
 		}
 	}
-	/* Second Pooling Layer: Max pool  times */
+	/* Second Pooling Layer (Subsampling): Max pool 4*4*16 times */
 	else if(step == 5){
+		int next_pool_dir[4] = {1,9,10,2};
+		if(times == 16){
+			step++;
+			ram_r_cur = pool_idx;
+			cnt = 0; n = 0;
+			times = 0;
+			ram_wr.write(1); // read data
+			ram_addr.write(ram_r_cur++);
+			rom_rd.write(true); // read layer data from ROM
+		}
+		else{
+			if(cnt / 4 == 1){
+				// find Max 
+				TYPE max = (TYPE)-1000.0;
+				for(int k=0; k<4; k++){
+					if(scopeMAX[k] > max){
+						max = scopeMAX[k];
+					}
+				}
+				// store (write) into RAM
+				ram_wr.write(0); // write
+				ram_addr.write(ram_w_cur++);
+				ram_data_out.write(max);
 
+				cnt = 0;
+				i += 2;
+				if((i-4320) % 8 == 0){
+					i += 8;
+					if((i-4320) % 64 == 0){
+						times++;
+					}
+				}
+			}
+			else{
+				/* read from RAM */
+				scopeMAX[cnt] = ram_data_in.read();
+				pool_idx = i + next_pool_dir[cnt];
+				cnt++;
+				ram_wr.write(1); // read
+				ram_addr.write(pool_idx);
+			}
+		}
 	}
 	/* First fully connected layer:  times */
 	else if(step == 6){
