@@ -41,6 +41,9 @@ SC_MODULE(lenet)
 
 	TYPE kernel_L2[6][KERNEL_SIZE][KERNEL_SIZE];
 	TYPE pooling_ft_L1[12][12]; // First pooling feature
+
+	TYPE input[4*4*16]; // input layer
+	TYPE weight[256];
 	
 	SC_CTOR(lenet)
 	{

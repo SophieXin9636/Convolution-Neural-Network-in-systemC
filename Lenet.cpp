@@ -254,8 +254,160 @@ void lenet::lenet_proc(){
 			}
 		}
 	}
-	/* First fully connected layer:  times */
+	/* First fully connected (Flatten) layer: 128 times */
 	else if(step == 6){
+		if(times == 128){ // 128th times
+			step++;
+			cnt = 0;
+			times = 0;
+			ram_wr.write(1); // read
+			ram_addr.write(ram_r_cur);
+		}
+		else{
+			if(cnt < 256){ // 16*16
+				/* read flatten data from ROM */
+				rom_rd.write(true);		
+				weight[cnt] = rom_data_in.read();
+				rom_addr.write(rom_cur++);
+				cnt++;
+			}
+			else if(cnt == 256){
+				/* read bias data from ROM */
+				rom_rd.write(true);
+				bias = rom_data_in.read();
+				rom_addr.write(rom_cur++);
+				cnt++;
+			}
+			else if(cnt < 513){ // read from 5344~5599 (256) Second pooling data
+				/* read from RAM */
+				input[cnt-513] = ram_data_in.read();
+				cnt++;
+				ram_wr.write(1); // read
+				ram_addr.write(ram_r_cur++);
+			}
+			else if(cnt == 513){
+				sum = (TYPE)0.0;
+				/* flatten */
+				for(i=0; i<256; i++){
+					sum += input[i] * weight[i];
+				}
+				// add bias
+				sum += bias;
 
+				/* activation function: ReLu Function */
+				if(sum <= 0.0){
+					sum = 0.0;
+				}
+						
+				/* write into RAM */
+				ram_wr.write(0); // write 5600~5727
+				ram_addr.write(ram_w_cur++);
+				ram_data_out.write(sum);
+				times++;
+				cnt = (times < 256)? 0: cnt;
+			}
+		}
+	}
+	/* Second fully connected (Flatten) layer: 84 times */
+	else if(step == 7){
+		if(times == 84){ // 84th times
+			step++;
+			cnt = 0;
+			times = 0;
+			ram_wr.write(1); // read
+			ram_addr.write(ram_r_cur);
+		}
+		else{
+			if(cnt < 128){ // 128
+				/* read flatten data from ROM */
+				rom_rd.write(true);		
+				weight[cnt] = rom_data_in.read();
+				rom_addr.write(rom_cur++);
+				cnt++;
+			}
+			else if(cnt == 128){
+				/* read bias data from ROM */
+				rom_rd.write(true);
+				bias = rom_data_in.read();
+				rom_addr.write(rom_cur++);
+				cnt++;
+			}
+			else if(cnt < 257){ // read from 5600~5727 (128) Second pooling data
+				/* read from RAM */
+				input[cnt-257] = ram_data_in.read();
+				cnt++;
+				ram_wr.write(1); // read
+				ram_addr.write(ram_r_cur++);
+			}
+			else if(cnt == 257){
+				sum = (TYPE)0.0;
+				/* flatten */
+				for(i=0; i<128; i++){
+					sum += input[i] * weight[i];
+				}
+				// add bias
+				sum += bias;
+
+				/* activation function: ReLu Function */
+				if(sum <= 0.0){
+					sum = 0.0;
+				}
+						
+				/* write into RAM */
+				ram_wr.write(0); // write 5728~5811 (84)
+				ram_addr.write(ram_w_cur++);
+				ram_data_out.write(sum);
+				times++;
+				cnt = (times < 84)? 0: cnt;
+			}
+		}
+	}
+	/* Third fully connected (Flatten) of Output layer: 10 times */
+	else if(step == 8){
+		if(times == 10){ // 10 times
+			step++;
+		}
+		else{
+			if(cnt < 84){ // 128
+				/* read flatten data from ROM */
+				rom_rd.write(true);		
+				weight[cnt] = rom_data_in.read();
+				rom_addr.write(rom_cur++);
+				cnt++;
+			}
+			else if(cnt == 85){
+				/* read bias data from ROM */
+				rom_rd.write(true);
+				bias = rom_data_in.read();
+				rom_addr.write(rom_cur++);
+				cnt++;
+			}
+			else if(cnt < 169){ // read from 5600~5727 (128) Second pooling data
+				/* read from RAM */
+				input[cnt-169] = ram_data_in.read();
+				cnt++;
+				ram_wr.write(1); // read
+				ram_addr.write(ram_r_cur++);
+			}
+			else if(cnt == 169){
+				sum = (TYPE)0.0;
+				/* flatten */
+				for(i=0; i<84; i++){
+					sum += input[i] * weight[i];
+				}
+				// add bias
+				sum += bias;
+
+				/* activation function: ReLu Function */
+				if(sum <= 0.0){
+					sum = 0.0;
+				}
+
+				valid.write(true);
+				result.write(sum);
+				times++;
+				cnt = (times < 10)? 0: cnt;
+			}
+		}
 	}
 }
