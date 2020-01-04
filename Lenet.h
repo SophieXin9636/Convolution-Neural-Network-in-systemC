@@ -25,13 +25,18 @@ SC_MODULE(lenet)
 	void lenet_proc();
 	
 	ifstream fin;
+	int ram_cur;
 	TYPE image[28][28];
 	TYPE sum[6][24*24];
 	TYPE kernel[5][5];
 	TYPE bias;
 	int i, j, ka, kb, cnt, cnt2, n, step;
-	int offset, step2;
+	int offset, times;
 	int ram_cnt;
+
+	TYPE scopeMAX[4]; // MAX pool
+	TYPE pool[6][14*14];
+	int pool_idx;
 	
 	SC_CTOR(lenet)
 	{

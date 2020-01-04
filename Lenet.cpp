@@ -4,7 +4,7 @@
 
 void lenet::lenet_proc(){
 	if(reset.read()){
-		step = 1, step2 = 0;
+		step = 1, times = 0;
 		cnt = 0; n = 0;
 		cnt2 = 0;
 		offset = 0;
@@ -26,21 +26,23 @@ void lenet::lenet_proc(){
 		step++;
 		rom_rd.write(true);
 	}
-	/* First convolution layer */
+	/* First convolution layer: 24*24*6 times */
 	else if(step == 2){
 		if(cnt < 25){
+			/* read kernel data from ROM */
 			rom_rd.write(true);		
 			kernel[cnt/5][cnt%5] = rom_data_in.read();
 			cnt++;
-			rom_addr.write(26 * step2 + cnt);
+			rom_addr.write(26 * times + cnt);
 		}
 		else if(cnt == 25){
+			/* read bias data from ROM */
 			rom_rd.write(true);
 			bias = rom_data_in.read();
 			cnt++;
-			rom_addr.write(26 * step2 + cnt);
+			rom_addr.write(26 * times + cnt);
 			/*
-			cout << "kernel " << step2 + 1 << " :" << endl;
+			cout << "kernel " << times + 1 << " :" << endl;
 			for(i=0; i<5; i++){
 				for(j=0; j<5; j++){
 					cout << kernel[i][j] <<" ";
@@ -50,45 +52,84 @@ void lenet::lenet_proc(){
 			cout << "Bias: " << bias << endl << endl;*/
 		}
 		else{
-			if(1){
-				sum[step2][n] = 0.0;
-				/* convolution */
-				for(i=n/24, ka=0; i<n/24+5, ka<5; i++, ka++){
-					for(j=n%24, kb=0; j<n%24+5, kb<5; j++, kb++){
-						sum[step2][n] += image[i][j] * kernel[ka][kb];
-					}
+			sum[times][n] = 0.0;
+			/* convolution */
+			for(i=n/24, ka=0; i<n/24+5, ka<5; i++, ka++){
+				for(j=n%24, kb=0; j<n%24+5, kb<5; j++, kb++){
+					sum[times][n] += image[i][j] * kernel[ka][kb];
 				}
-				//cout << endl << endl;
-				// add bias
-				sum[step2][n] += bias;
+			}
+			//cout << endl << endl;
+			// add bias
+			sum[times][n] += bias;
 
-				/* activation function: ReLu Function */
-				if(sum[step2][n] <= 0){
-					sum[step2][n] = 0;
-				}
+			/* activation function: ReLu Function */
+			if(sum[times][n] <= 0){
+				sum[times][n] = 0;
+			}
 				
-				// write into RAM
-				ram_wr.write(0);
-				ram_addr.write(step2 * 24*24 + n);
-				ram_data_out.write(sum[step2][n]);
+			/* write into RAM */
+			ram_wr.write(0); // write
+			ram_addr.write(times * 24*24 + n);
+			ram_data_out.write(sum[times][n]);
+			n++;
 
-				//cout <<"Lanet: " << ram_addr <<" " << ram_data_out << endl;
-				//cout <<"  n  : " << n <<" "<< sum[step2][n] << endl;
-
-				n++;
-
-				if(n % (24*24) == 0){
+			if(n % (24*24) == 0){
+				cnt = 0;
+				times++;
+				n = 0;
+				if(times == 6){ // sixth time
+					step++;
 					cnt = 0;
-					step2++;
-					n = 0;
-					if(step2 == 6) // sixth time
-						step++;
-					return;
+					ram_wr.write(1); // read
+					ram_addr.write(0);
+					i = 0;
+					ram_cur = times * 24*24 + n;
+					times = 0;
 				}
+				return;
 			}
 		}
 	}
+	/* Pooling Layer: Max pool 12*12*6 times */
 	else if(step == 3){
+		int next_pool_dir[4] = {1,24,25,2};
+		if(cnt / 4 == 1){
+			// find Max 
+			TYPE max = -1000.0;
+			for(int k; k<4; k++){
+				if(scopeMAX[k] > max){
+					max = scopeMAX[k];
+				}
+			}
+			// store into RAM
+			ram_wr.write(0); // write
+			ram_addr.write(ram_cur++);
+			ram_data_out.write(max);
+
+			cnt = 0;
+			i += 2;
+			if(i % 24 == 0){
+				i += 24;
+				if(i % 576 == 0){
+					times++;
+				}
+			}
+		}
+		else{
+			/* read from RAM */
+			scopeMAX[cnt] = ram_data_in.read();
+			pool_idx = i + next_pool_dir[cnt];
+			cnt++;
+			ram_wr.write(1); // read
+			ram_addr.write(pool_idx++);
+		}
+		if(times == 6){
+			step++;
+		}
+	}
+	/* Second convolution layer: 8*8*16 times */
+	else if(step == 4){
 		
 	}
 }
