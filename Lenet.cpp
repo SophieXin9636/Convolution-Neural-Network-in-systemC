@@ -29,7 +29,7 @@ void lenet::lenet_proc(){
 	/* First convolution layer: 24*24*6 times */
 	else if(step == 2){
 		if(cnt < 25){
-			/* read kernel data from ROM */
+			/* read kernel data from ROM 0~155 */
 			rom_rd.write(true);		
 			kernel[cnt/5][cnt%5] = rom_data_in.read();
 			cnt++;
@@ -57,7 +57,7 @@ void lenet::lenet_proc(){
 				cnt = 0;
 				times = 0;
 				ram_wr.write(1); // read
-				ram_addr.write(ram_r_cur); // start from 0
+				ram_addr.write(ram_r_cur++); // start from 0
 				i = 0;
 			}
 			else{
@@ -77,7 +77,7 @@ void lenet::lenet_proc(){
 				}
 					
 				n++;
-				/* write into RAM */
+				/* write into RAM 0~3455 */
 				ram_wr.write(0); // write
 				ram_addr.write(ram_w_cur++);
 				ram_data_out.write(sum);
@@ -110,7 +110,7 @@ void lenet::lenet_proc(){
 						max = scopeMAX[k];
 					}
 				}
-				// store (write) into RAM
+				// store (write) into RAM 3456~3319
 				ram_wr.write(0); // write
 				ram_addr.write(ram_w_cur++);
 				ram_data_out.write(max);
@@ -129,15 +129,15 @@ void lenet::lenet_proc(){
 				scopeMAX[cnt] = ram_data_in.read();
 				pool_idx = i + next_pool_dir[cnt];
 				cnt++;
-				ram_wr.write(1); // read
-				ram_addr.write(pool_idx++);
+				ram_wr.write(1); // read 0~3455
+				ram_addr.write(pool_idx);
 			}
 		}
 	}
 	/* Second convolution layer: 8*8*16 times */
 	else if(step == 4){
 		if(cnt < 144){ // 12*12
-			/* read pooling data from RAM */
+			/* read pooling data from RAM */ // 3456~4319
 			pooling_ft_L1[cnt/12][cnt%12] = ram_data_in.read();
 			ram_wr.write(1); // read
 			ram_addr.write(ram_r_cur++);
@@ -145,7 +145,7 @@ void lenet::lenet_proc(){
 		}
 		else if(cnt < 294){ // 12*12 + 5*5*6
 			int t = cnt-144;
-			/* read kernel data from ROM */
+			/* read kernel data from ROM 156~2571 */
 			rom_rd.write(true);		
 			kernel_L2[t/25][(t%25)/5][t%5] = rom_data_in.read();
 			rom_addr.write(rom_cur++);
@@ -195,7 +195,7 @@ void lenet::lenet_proc(){
 					sum = 0.0;
 				}
 
-				/* write into RAM */
+				/* write into RAM 4319~5343 */
 				ram_wr.write(0); // write
 				ram_addr.write(ram_w_cur++);
 				ram_data_out.write(sum);
@@ -230,7 +230,7 @@ void lenet::lenet_proc(){
 						max = scopeMAX[k];
 					}
 				}
-				// store (write) into RAM
+				// store (write) into RAM 5344~5599
 				ram_wr.write(0); // write
 				ram_addr.write(ram_w_cur++);
 				ram_data_out.write(max);
@@ -245,7 +245,7 @@ void lenet::lenet_proc(){
 				}
 			}
 			else{
-				/* read from RAM */
+				/* read from RAM 4319~5343 */
 				scopeMAX[cnt] = ram_data_in.read();
 				pool_idx = i + next_pool_dir[cnt];
 				cnt++;
