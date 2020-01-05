@@ -262,6 +262,7 @@ void lenet::lenet_proc(){
 			times = 0;
 			ram_wr.write(1); // read
 			ram_addr.write(ram_r_cur);
+			rom_rd.write(true); // read layer data from ROM
 		}
 		else{
 			if(cnt < 256){ // 16*16
@@ -280,7 +281,7 @@ void lenet::lenet_proc(){
 			}
 			else if(cnt < 513){ // read from 5344~5599 (256) Second pooling data
 				/* read from RAM */
-				input[cnt-513] = ram_data_in.read();
+				input[cnt-257] = ram_data_in.read();
 				cnt++;
 				ram_wr.write(1); // read
 				ram_addr.write(ram_r_cur++);
@@ -300,7 +301,7 @@ void lenet::lenet_proc(){
 				}
 						
 				/* write into RAM */
-				ram_wr.write(0); // write 5600~5727
+				ram_wr.write(0); // write into 5600~5727 (128)
 				ram_addr.write(ram_w_cur++);
 				ram_data_out.write(sum);
 				times++;
@@ -316,6 +317,7 @@ void lenet::lenet_proc(){
 			times = 0;
 			ram_wr.write(1); // read
 			ram_addr.write(ram_r_cur);
+			rom_rd.write(true); // read layer data from ROM
 		}
 		else{
 			if(cnt < 128){ // 128
@@ -334,7 +336,7 @@ void lenet::lenet_proc(){
 			}
 			else if(cnt < 257){ // read from 5600~5727 (128) Second pooling data
 				/* read from RAM */
-				input[cnt-257] = ram_data_in.read();
+				input[cnt-129] = ram_data_in.read();
 				cnt++;
 				ram_wr.write(1); // read
 				ram_addr.write(ram_r_cur++);
@@ -349,8 +351,8 @@ void lenet::lenet_proc(){
 				sum += bias;
 
 				/* activation function: ReLu Function */
-				if(sum <= 0.0){
-					sum = 0.0;
+				if(sum <= (TYPE)0.0){
+					sum = (TYPE)0.0;
 				}
 						
 				/* write into RAM */
@@ -358,7 +360,7 @@ void lenet::lenet_proc(){
 				ram_addr.write(ram_w_cur++);
 				ram_data_out.write(sum);
 				times++;
-				cnt = (times < 84)? 0: cnt;
+				cnt = 0;
 			}
 		}
 	}
@@ -368,26 +370,27 @@ void lenet::lenet_proc(){
 			step++;
 		}
 		else{
-			if(cnt < 84){ // 128
+			if(cnt < 84){ // 84
+				valid.write(false);
 				/* read flatten data from ROM */
 				rom_rd.write(true);		
 				weight[cnt] = rom_data_in.read();
 				rom_addr.write(rom_cur++);
 				cnt++;
 			}
-			else if(cnt == 85){
+			else if(cnt == 84){
 				/* read bias data from ROM */
 				rom_rd.write(true);
 				bias = rom_data_in.read();
 				rom_addr.write(rom_cur++);
 				cnt++;
 			}
-			else if(cnt < 169){ // read from 5600~5727 (128) Second pooling data
+			else if(cnt < 169){ // read from 5727~5811 (84) Second pooling data
 				/* read from RAM */
-				input[cnt-169] = ram_data_in.read();
-				cnt++;
+				input[cnt-85] = ram_data_in.read();
 				ram_wr.write(1); // read
 				ram_addr.write(ram_r_cur++);
+				cnt++;
 			}
 			else if(cnt == 169){
 				sum = (TYPE)0.0;
@@ -397,16 +400,12 @@ void lenet::lenet_proc(){
 				}
 				// add bias
 				sum += bias;
-
-				/* activation function: ReLu Function */
-				if(sum <= 0.0){
-					sum = 0.0;
-				}
+				//cout <<"After Sum: " << sum <<"\n";
 
 				valid.write(true);
 				result.write(sum);
 				times++;
-				cnt = (times < 10)? 0: cnt;
+				cnt = 0;
 			}
 		}
 	}
