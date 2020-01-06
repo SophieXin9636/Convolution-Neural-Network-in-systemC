@@ -80,6 +80,7 @@ void lenet::lenet_proc(){
 				n++;
 				/* write into RAM 0~3455 */
 				ram_wr.write(0); // write
+				//cout << "RAM: " << ram_w_cur <<"\t" << sum << endl;
 				ram_addr.write(ram_w_cur++);
 				ram_data_out.write(sum);
 				if(n % (24*24) == 0){
@@ -95,7 +96,7 @@ void lenet::lenet_proc(){
 		int next_pool_dir[4] = {1,24,25,2};
 		if(times == 6){
 			step++;
-			ram_r_cur = i;
+			ram_r_cur = 3457;
 			cnt = 0; n = 0;
 			times = 0;
 			ram_wr.write(1); // read data
@@ -112,6 +113,7 @@ void lenet::lenet_proc(){
 						max = scopeMAX[k];
 					}
 				}
+				//cout << ram_w_cur-3456 <<" "<<  max << endl;
 				// store (write) into RAM 3456~4319
 				ram_wr.write(0); // write
 				ram_addr.write(ram_w_cur++);
@@ -142,6 +144,7 @@ void lenet::lenet_proc(){
 			step++;
 			cnt = 0;
 			times = 0;
+			ram_r_cur = 4320;
 			ram_wr.write(1); // read
 			ram_addr.write(ram_r_cur++);
 			i = 0;
@@ -151,6 +154,7 @@ void lenet::lenet_proc(){
 			if(cnt < 864){ // 12*12*6
 				/* read pooling data from RAM */ // 3456~4319
 				pooling_ft_L1[cnt/144][(cnt%144)/12][cnt%12] = ram_data_in.read();
+				//cout <<"RAM: " << ram_r_cur <<"\t"<<cnt <<"\t" << i <<"\t"<<pooling_ft_L1[cnt/144][(cnt%144)/12][cnt%12] << endl;
 				ram_wr.write(1); // read
 				ram_addr.write(ram_r_cur++);
 				cnt++;
@@ -158,8 +162,9 @@ void lenet::lenet_proc(){
 			else if(cnt < 1014){ // 12*12*6 + 5*5*6
 				int t = cnt-864;
 				/* read kernel data from ROM 156~2571 */
-				rom_rd.write(true);		
+				rom_rd.write(true);
 				kernel_L2[t/25][(t%25)/5][t%5] = rom_data_in.read();
+				//cout <<"ROM: " << rom_cur <<"\t"<< "kernel[" << t/25 <<"][" << (t%25)/5 <<"][" << t%5  <<"]="<< kernel_L2[t/25][(t%25)/5][t%5] << endl;
 				rom_addr.write(rom_cur++);
 				cnt++;
 			}
@@ -167,25 +172,19 @@ void lenet::lenet_proc(){
 				/* read bias data from ROM */
 				rom_rd.write(true);
 				bias = rom_data_in.read();
+				//cout <<"ROM: " << rom_cur <<"\t" << times <<"\t"<< bias << endl; 
 				rom_addr.write(rom_cur++);
 				cnt++;
-				/*
-				cout << "kernel " << times + 1 << " :" << endl;
-				for(i=0; i<5; i++){
-					for(j=0; j<5; j++){
-						cout << kernel_L2[i][j] <<" ";
-					}
-					cout << endl;
-				}
-				cout << "Bias: " << bias << endl << endl;*/
 			}
 			else{
+				//if(n == 0) cout <<"Layer: " << times << endl;
 				/* convolution */
 				sum = (TYPE)0.0;
-				for(i=n/8, ka=0; i<n/8+5, ka<5; i++, ka++){
-					for(j=n%8, kb=0; j<n%8+5, kb<5; j++, kb++){
-						for(int k=0; k<DEPTH_L1; k++){
+				for(int k=0; k<DEPTH_L1; k++){
+					for(i=n/8, ka=0; i<n/8+5, ka<5; i++, ka++){
+						for(j=n%8, kb=0; j<n%8+5, kb<5; j++, kb++){
 							sum += pooling_ft_L1[k][i][j] * kernel_L2[k][ka][kb];
+							//cout << pooling_ft_L1[k][i][j]<< endl;
 						}
 					}
 				}
@@ -197,29 +196,32 @@ void lenet::lenet_proc(){
 					sum = (TYPE)0.0;
 				}
 
-				/* write into RAM 4319~5343 */
+				/* write into RAM 4320~5343 */
 				ram_wr.write(0); // write
 				ram_addr.write(ram_w_cur++);
 				ram_data_out.write(sum);
+				//cout << sum << " ";
 				n++;
+				//if(n % 8 == 0) cout << endl;
 
 				if(n % 64 == 0){
 					times++;
 					cnt = 864;
 					n = 0;
+					//cout << endl;
 				}
 			}
 		}
 	}
 	/* Second Pooling Layer (Subsampling): Max pool 4*4*16 times */
 	else if(step == 5){
-		int next_pool_dir[4] = {1,9,10,2};
+		int next_pool_dir[4] = {1,8,9,2};
 		if(times == 16){
 			step++;
 			cnt = 0; n = 0;
 			times = 0;
 			ram_wr.write(1); // read data
-			ram_r_cur = 5343;
+			ram_r_cur = 5344;
 			ram_addr.write(ram_r_cur++);
 			rom_rd.write(true); // read layer data from ROM
 			cout <<"Step 5 has done\n";
@@ -233,6 +235,7 @@ void lenet::lenet_proc(){
 						max = scopeMAX[k];
 					}
 				}
+				cout << ram_w_cur-5344 <<" "<< max << endl;
 				// store (write) into RAM 5344~5599
 				ram_wr.write(0); // write
 				ram_addr.write(ram_w_cur++);
@@ -250,7 +253,7 @@ void lenet::lenet_proc(){
 			else{
 				/* read from RAM 4319~5343 */
 				scopeMAX[cnt] = ram_data_in.read();
-				pool_idx = 4319 + i + next_pool_dir[cnt];
+				pool_idx = 4320 + i + next_pool_dir[cnt];
 				cnt++;
 				ram_wr.write(1); // read
 				ram_addr.write(pool_idx);
