@@ -30,7 +30,7 @@ SC_MODULE(ROM)
 			win >> buf;
 		}
 		win.close();
-		
+
 		win.open("lenet_weights/lenet_weight_c2.txt");
 		win >> buf;
 		while(!win.eof())
@@ -39,7 +39,7 @@ SC_MODULE(ROM)
 			win >> buf;
 		}
 		win.close();
-		
+
 		win.open("lenet_weights/lenet_weight_d1.txt");
 		win >> buf;
 		while(!win.eof())
@@ -48,7 +48,7 @@ SC_MODULE(ROM)
 			win >> buf;
 		}
 		win.close();
-		
+
 		win.open("lenet_weights/lenet_weight_d2.txt");
 		win >> buf;
 		while(!win.eof())
@@ -57,7 +57,7 @@ SC_MODULE(ROM)
 			win >> buf;
 		}
 		win.close();
-		
+
 		win.open("lenet_weights/lenet_weight_d3.txt");
 		win >> buf;
 		while(!win.eof())

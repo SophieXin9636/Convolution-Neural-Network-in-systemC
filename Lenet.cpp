@@ -59,7 +59,8 @@ void lenet::lenet_proc(){
 				ram_wr.write(1); // read
 				ram_addr.write(ram_r_cur++); // start from 0
 				i = 0;
-				cout <<"Step 2 has done\n";
+				//cout <<"Step 2 has done\n";
+				//cout << "index: " << rom_cur << endl;
 			}
 			else{
 				sum = 0.0;
@@ -102,7 +103,8 @@ void lenet::lenet_proc(){
 			ram_wr.write(1); // read data
 			ram_addr.write(ram_r_cur);
 			rom_rd.write(true); // read Second convolution layer data from ROM
-			cout <<"Step 3 has done\n";
+			//cout <<"Step 3 has done\n";
+			//cout << "index: " << rom_cur << endl;
 		}
 		else{
 			if(cnt / 4 == 1){
@@ -145,10 +147,12 @@ void lenet::lenet_proc(){
 			cnt = 0;
 			times = 0;
 			ram_r_cur = 4320;
+			pool_idx = ram_r_cur;
 			ram_wr.write(1); // read
 			ram_addr.write(ram_r_cur++);
 			i = 0;
-			cout <<"Step 4 has done\n";
+			//cout <<"Step 4 has done\n";
+			//cout << "index: " << rom_cur << endl;
 		}
 		else {
 			if(cnt < 864){ // 12*12*6
@@ -224,18 +228,20 @@ void lenet::lenet_proc(){
 			ram_r_cur = 5344;
 			ram_addr.write(ram_r_cur++);
 			rom_rd.write(true); // read layer data from ROM
-			cout <<"Step 5 has done\n";
+			//cout <<"Step 5 has done\n";
+			//cout << "index: " << rom_cur << endl;
 		}
 		else{
 			if(cnt / 4 == 1){
 				// find Max 
 				TYPE max = (TYPE)-1000.0;
 				for(int k=0; k<4; k++){
+					//cout << k <<"\t" << scopeMAX[k] << endl;
 					if(scopeMAX[k] > max){
 						max = scopeMAX[k];
 					}
 				}
-				cout << ram_w_cur-5344 <<" "<< max << endl;
+				//cout << ram_w_cur-5344 <<" "<< max << endl;
 				// store (write) into RAM 5344~5599
 				ram_wr.write(0); // write
 				ram_addr.write(ram_w_cur++);
@@ -251,9 +257,11 @@ void lenet::lenet_proc(){
 				}
 			}
 			else{
-				/* read from RAM 4319~5343 */
+				/* read from RAM 4320~5343 */
 				scopeMAX[cnt] = ram_data_in.read();
-				pool_idx = 4320 + i + next_pool_dir[cnt];
+				//cout << cnt <<" "<< pool_idx-4320 <<" "<< scopeMAX[cnt] << endl;
+				if(cnt==3 && i%8==6) pool_idx = 4320 + i + 8 + next_pool_dir[cnt];
+				else pool_idx = 4320 + i + next_pool_dir[cnt];
 				cnt++;
 				ram_wr.write(1); // read
 				ram_addr.write(pool_idx);
@@ -267,9 +275,11 @@ void lenet::lenet_proc(){
 			cnt = 0;
 			times = 0;
 			ram_wr.write(1); // read
-			ram_addr.write(ram_r_cur);
+			ram_r_cur = 5600;
+			ram_addr.write(ram_r_cur++);
 			rom_rd.write(true); // read layer data from ROM
-			cout <<"Step 6 has done\n";
+			//cout <<"Step 6 has done\n";
+			//cout << "index: " << rom_cur << endl;
 		}
 		else{
 			if(cnt < 256){ // read from 5344~5599 (256) Second pooling data
@@ -307,7 +317,7 @@ void lenet::lenet_proc(){
 				if(sum <= (TYPE)0.0){
 					sum = (TYPE)0.0;
 				}
-						
+				//cout << times <<" " << sum << endl;	
 				/* write into RAM */
 				ram_wr.write(0); // write into 5600~5727 (128)
 				ram_addr.write(ram_w_cur++);
@@ -323,10 +333,12 @@ void lenet::lenet_proc(){
 			step++;
 			cnt = 0;
 			times = 0;
+			ram_r_cur = 5728;
 			ram_wr.write(1); // read
-			ram_addr.write(ram_r_cur);
+			ram_addr.write(ram_r_cur++);
 			rom_rd.write(true); // read layer data from ROM
-			cout <<"Step 7 has done\n";
+			//cout <<"Step 7 has done\n";
+			//cout << "index: " << rom_cur << endl;
 		}
 		else{
 			if(cnt < 128){ // read from 5600~5727 (128) Second pooling data
@@ -364,7 +376,8 @@ void lenet::lenet_proc(){
 				if(sum <= (TYPE)0.0){
 					sum = (TYPE)0.0;
 				}
-						
+				//cout << sum <<"   ";
+				//if(times % 7 == 6) cout << endl;		
 				/* write into RAM */
 				ram_wr.write(0); // write 5728~5811 (84)
 				ram_addr.write(ram_w_cur++);
@@ -374,11 +387,12 @@ void lenet::lenet_proc(){
 			}
 		}
 	}
-		/* Third fully connected (Flatten) of Output layer: 10 times */
+	/* Third fully connected (Flatten) of Output layer: 10 times */
 	else if(step == 8){
 		if(times == 10){ // 10 times
 			step++;
-			cout <<"Step 8 has done\n";
+			//cout <<"Step 8 has done\n";
+			//cout << "index: " << rom_cur << endl;
 		}
 		else{
 			if(cnt < 84){ // read from 5727~5811 (84) Second pooling data
@@ -394,14 +408,18 @@ void lenet::lenet_proc(){
 				/* read flatten data from ROM */
 				rom_rd.write(true);		
 				weight[cnt-84] = rom_data_in.read();
-				rom_addr.write(rom_cur++);
+				//rom_addr.write(rom_cur++);
+				if(rom_cur<47154)
+					rom_addr.write(rom_cur++);
 				cnt++;
 			}
 			else if(cnt == 168){
 				/* read bias data from ROM */
 				rom_rd.write(true);
 				bias = rom_data_in.read();
-				rom_addr.write(rom_cur++);
+				//rom_addr.write(rom_cur++);
+				if(rom_cur<47154)
+					rom_addr.write(rom_cur++);
 				cnt++;
 			}
 			else if(cnt == 169){
