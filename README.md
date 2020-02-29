@@ -1,4 +1,4 @@
-# CNN using in systemC (HW4)
+# CNN using in systemC
 
 ## Outline
 [TOC]
